@@ -1,4 +1,5 @@
 out/
-out2/
+a/
+b/
 transcripts.tar.gz
 __pycache__/

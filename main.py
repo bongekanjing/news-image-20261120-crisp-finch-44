@@ -342,6 +342,24 @@ def masthead(d):
     return y + 14
 
 
+def balanced_pairs(lines, n, f):
+    """Split lines into `n` columns that are as even as the copy allows.
+
+    A plain half-split can leave the second column one long word wider than the
+    first, which shows as a ragged standfirst. This picks the split that
+    minimises the widest of the two, measured in pixels with font `f`.
+    """
+    if n < 2 or len(lines) < 2:
+        return [lines[i::n] for i in range(n)]
+    best, best_w = None, None
+    for cut in range(1, len(lines)):
+        halves = [lines[:cut], lines[cut:]]
+        widest = max(max((f.getlength(l) for l in h), default=0) for h in halves)
+        if best_w is None or widest < best_w:
+            best, best_w = halves, widest
+    return best
+
+
 def lead(d, y):
     """The full-width lead story. Returns the y below its deck."""
     head_f = face(SERIF_B, 40)
@@ -357,11 +375,12 @@ def lead(d, y):
     # the deck reads as two balanced halves, like a real standfirst
     deck_w = (PAGE - 2 * MARGIN - GUTTER) // 2
     lines = fold(LEAD_DECK, deck_f, deck_w)
-    half = (len(lines) + 1) // 2
-    for i, line in enumerate(lines):
-        col, row = (0, i) if i < half else (1, i - half)
-        d.text((MARGIN + col * (deck_w + GUTTER), y + row * 16), line, font=deck_f, fill=(60, 56, 52))
-    y += half * 16 + 6
+    halves = balanced_pairs(lines, 2, deck_f)
+    for col, part in enumerate(halves):
+        for row, line in enumerate(part):
+            d.text((MARGIN + col * (deck_w + GUTTER), y + row * 16), line,
+                   font=deck_f, fill=(60, 56, 52))
+    y += max(len(h) for h in halves) * 16 + 6
 
     d.line([(MARGIN, y), (PAGE - MARGIN, y)], fill=INK, width=1)
     y += 4
